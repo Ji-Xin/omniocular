@@ -1,3 +1,4 @@
+import os
 import logging
 import random
 from copy import deepcopy
@@ -40,12 +41,14 @@ def get_logger():
     return logger
 
 
-def evaluate_dataset(split_name, dataset_cls, model, embedding, loader, batch_size, device, is_multilabel):
-    saved_model_evaluator = EvaluatorFactory.get_evaluator(dataset_cls, model, embedding, loader, batch_size, device)
+def evaluate_dataset(split_name, dataset_cls, model, embedding,
+                     loader, batch_size, device, is_multilabel, matrix_path):
+    saved_model_evaluator = EvaluatorFactory.get_evaluator(
+        dataset_cls, model, embedding, loader, batch_size, device)
     if hasattr(saved_model_evaluator, 'is_multilabel'):
         saved_model_evaluator.is_multilabel = is_multilabel
 
-    scores, metric_names = saved_model_evaluator.get_scores()
+    scores, metric_names = saved_model_evaluator.get_scores(matrix_path)
     print('Evaluation metrics for', split_name)
     print(metric_names)
     print(scores)
@@ -54,21 +57,19 @@ def evaluate_dataset(split_name, dataset_cls, model, embedding, loader, batch_si
 if __name__ == '__main__':
     # Set default configuration in args.py
     args = get_args()
+    logger = get_logger()
 
     # Set random seed for reproducibility
     torch.manual_seed(args.seed)
     torch.backends.cudnn.deterministic = True
-    if not args.cuda:
-        args.gpu = -1
-    if torch.cuda.is_available() and args.cuda:
-        print('Note: You are using GPU for training')
-        torch.cuda.set_device(args.gpu)
-        torch.cuda.manual_seed(args.seed)
-    if torch.cuda.is_available() and not args.cuda:
-        print('Warning: Using CPU for training')
     np.random.seed(args.seed)
     random.seed(args.seed)
-    logger = get_logger()
+
+    if torch.cuda.is_available() and args.cuda:
+        torch.cuda.set_device(args.gpu)
+        device = torch.device("cuda", args.gpu)
+    else:
+        device = torch.device("cpu")
 
     dataset_map = {
         'VulasDiffToken': VulasDiffToken
@@ -80,7 +81,8 @@ if __name__ == '__main__':
         dataset_class = dataset_map[args.dataset]
         train_iter, dev_iter, test_iter = dataset_map[args.dataset].iters(args.data_dir, args.word_vectors_file,
                                                                           args.word_vectors_dir,
-                                                                          batch_size=args.batch_size, device=args.gpu,
+                                                                          batch_size=args.batch_size,
+                                                                          device=device,
                                                                           unk_init=UnknownWordVecCache.unk)
 
     config = deepcopy(args)
@@ -143,8 +145,8 @@ if __name__ == '__main__':
         model = torch.load(trainer.snapshot_path)
 
     evaluate_dataset('dev', dataset_map[args.dataset], model, None, dev_iter, args.batch_size,
-                     is_multilabel=dataset_class.IS_MULTILABEL,
-                     device=args.gpu)
+                     is_multilabel=dataset_class.IS_MULTILABEL, device=args.gpu,
+                     matrix_path=os.path.join(args.matrix_path, "dev"))
     evaluate_dataset('test', dataset_map[args.dataset], model, None, test_iter, args.batch_size,
-                     is_multilabel=dataset_class.IS_MULTILABEL,
-                     device=args.gpu)
+                     is_multilabel=dataset_class.IS_MULTILABEL, device=args.gpu,
+                     matrix_path=os.path.join(args.matrix_path, "test"))

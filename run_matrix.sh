@@ -1,0 +1,3 @@
+python -m models.diff_token.reg_lstm --dataset VulasDiffToken --mode static --hidden-dim 512 --num-layers 1 --bidirectional --batch-size 8 --gpu 0 --patience 10 --epochs 20 --dropout 0.5 --embed-droprate 0.2 --lr 0.001 --matrix-path matrix/reg_lstm
+python -m models.diff_token.reg_cnn --dataset VulasDiffToken --mode static --batch-size 8 --batchnorm --dynamic-pool --dynamic-pool-length 4 --epochs 30 --lr 0.001 --dropout 0.5 --embed-droprate 0.2 --matrix-path matrix/reg_cnn
+python -m models.diff_token.hr_cnn --dataset VulasDiffToken --mode static --batch-size 8 --epochs 30 --lr 0.001 --dropout 0.5 --embed-droprate 0.2 --dynamic-pool --dynamic-pool-length 4 --matrix-path matrix/hr_cnn

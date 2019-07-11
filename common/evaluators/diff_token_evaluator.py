@@ -13,7 +13,7 @@ class DiffTokenEvaluator(Evaluator):
         self.ignore_lengths = False
         self.is_multilabel = False
 
-    def get_scores(self):
+    def get_scores(self, matrix_path=None):
         self.model.eval()
         self.data_loader.init_epoch()
         total_loss = 0
@@ -50,6 +50,11 @@ class DiffTokenEvaluator(Evaluator):
 
         predicted_labels = np.array(predicted_labels)
         target_labels = np.array(target_labels)
+
+        if matrix_path is not None:
+            with open(matrix_path, 'w') as fout:
+                 for lab in predicted_labels:
+                    print(lab, file=fout)
 
         accuracy = metrics.accuracy_score(target_labels, predicted_labels)
         precision = metrics.precision_score(target_labels, predicted_labels, average=None)[0]
