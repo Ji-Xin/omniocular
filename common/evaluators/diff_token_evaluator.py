@@ -1,6 +1,7 @@
 import torch
 import torch.nn.functional as F
 import numpy as np
+from scipy.special import softmax
 
 from sklearn import metrics
 from .generic_evaluator import Evaluator
@@ -23,6 +24,7 @@ class DiffTokenEvaluator(Evaluator):
             self.model.load_ema_params()
 
         predicted_labels, target_labels = list(), list()
+        predicted_prob = list()
         for batch_idx, batch in enumerate(self.data_loader):
             if hasattr(self.model, 'tar') and self.model.tar:  # TAR condition
                 if self.ignore_lengths:
@@ -35,6 +37,9 @@ class DiffTokenEvaluator(Evaluator):
                 else:
                     scores = self.model(batch.code[0], lengths=batch.code[1])
 
+            predicted_prob.extend(softmax(
+                scores.detach().cpu().numpy(), axis=1
+            )[:, 0])
             if self.is_multilabel:
                 scores_rounded = F.sigmoid(scores).round().long()
                 predicted_labels.extend(scores_rounded.cpu().detach().numpy())
@@ -51,10 +56,16 @@ class DiffTokenEvaluator(Evaluator):
         predicted_labels = np.array(predicted_labels)
         target_labels = np.array(target_labels)
 
+        sha = []
+        with open("matrix/truth") as f:
+            for line in f:
+                a = line.strip().split('\t')
+                sha.append(a[0])
+
         if matrix_path is not None:
             with open(matrix_path, 'w') as fout:
-                 for lab in predicted_labels:
-                    print(lab, file=fout)
+                 for sha, prob in zip(sha, predicted_prob):
+                    print("{}\t{}".format(sha, prob), file=fout)
 
         accuracy = metrics.accuracy_score(target_labels, predicted_labels)
         precision = metrics.precision_score(target_labels, predicted_labels, average=None)[0]
