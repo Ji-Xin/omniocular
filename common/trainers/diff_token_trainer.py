@@ -83,7 +83,7 @@ class DiffTokenTrainer(Trainer):
         os.makedirs(self.model_outfile, exist_ok=True)
         os.makedirs(os.path.join(self.model_outfile, self.train_loader.dataset.NAME), exist_ok=True)
 
-        # epochs = 1
+        # epochs = 5
         for epoch in range(1, epochs + 1):
             print('\n' + header)
             self.train_epoch(epoch)

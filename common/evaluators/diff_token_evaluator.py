@@ -18,6 +18,8 @@ class DiffTokenEvaluator(Evaluator):
         self.model.eval()
         self.data_loader.init_epoch()
         total_loss = 0
+        sha_dict = self.data_loader.dataset.fields["sha"].vocab.itos
+
 
         if hasattr(self.model, 'beta_ema') and self.model.beta_ema > 0:
             old_params = self.model.get_params()
@@ -25,6 +27,7 @@ class DiffTokenEvaluator(Evaluator):
 
         predicted_labels, target_labels = list(), list()
         predicted_prob = list()
+        sha = list()
         for batch_idx, batch in enumerate(self.data_loader):
             if hasattr(self.model, 'tar') and self.model.tar:  # TAR condition
                 if self.ignore_lengths:
@@ -37,6 +40,8 @@ class DiffTokenEvaluator(Evaluator):
                 else:
                     scores = self.model(batch.code[0], lengths=batch.code[1])
 
+            for sha_id in batch.sha:
+                sha.append(sha_dict[sha_id])
             predicted_prob.extend(softmax(
                 scores.detach().cpu().numpy(), axis=1
             )[:, 0])
@@ -55,12 +60,6 @@ class DiffTokenEvaluator(Evaluator):
 
         predicted_labels = np.array(predicted_labels)
         target_labels = np.array(target_labels)
-
-        sha = []
-        with open("matrix/truth") as f:
-            for line in f:
-                a = line.strip().split('\t')
-                sha.append(a[0])
 
         if matrix_path is not None:
             with open(matrix_path, 'w') as fout:

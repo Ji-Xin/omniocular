@@ -144,6 +144,9 @@ if __name__ == '__main__':
     if hasattr(trainer, 'snapshot_path'):
         model = torch.load(trainer.snapshot_path)
 
+    evaluate_dataset('train', dataset_map[args.dataset], model, None, train_iter, args.batch_size,
+                     is_multilabel=dataset_class.IS_MULTILABEL, device=args.gpu,
+                     matrix_path=os.path.join(args.matrix_path, "train"))
     evaluate_dataset('dev', dataset_map[args.dataset], model, None, dev_iter, args.batch_size,
                      is_multilabel=dataset_class.IS_MULTILABEL, device=args.gpu,
                      matrix_path=os.path.join(args.matrix_path, "dev"))

@@ -18,8 +18,8 @@ class VulasDiffToken(TabularDataset):
     NUM_CLASSES = 2
     IS_MULTILABEL = False
 
-    REPO_FIELD = Field(sequential=False, use_vocab=False, batch_first=True, preprocessing=remove_field)
-    SHA_FIELD = Field(sequential=False, use_vocab=False, batch_first=True, preprocessing=remove_field)
+    REPO_FIELD = Field(sequential=False, batch_first=True)
+    SHA_FIELD = Field(sequential=False, batch_first=True)
     CODE_FIELD = Field(batch_first=True, tokenize=split_json_string, include_lengths=True)
     LABEL_FIELD = Field(sequential=False, use_vocab=False, batch_first=True, preprocessing=process_labels)
 
@@ -37,7 +37,8 @@ class VulasDiffToken(TabularDataset):
         )
 
     @classmethod
-    def iters(cls, path, vectors_name, vectors_cache, batch_size=64, shuffle=True, device=0, vectors=None,
+    def iters(cls, path, vectors_name, vectors_cache, batch_size=64,
+              shuffle=True, device=0, vectors=None,
               unk_init=torch.Tensor.zero_):
         """
         :param path: directory containing train, test, dev files
@@ -54,8 +55,16 @@ class VulasDiffToken(TabularDataset):
 
         train, val, test = cls.splits(path)
         cls.CODE_FIELD.build_vocab(train, val, test, vectors=vectors)
-        return BucketIterator.splits((train, val, test), batch_size=batch_size, repeat=False, shuffle=shuffle,
-                                     sort_within_batch=True, device=device)
+        cls.SHA_FIELD.build_vocab(train, val, test)
+        cls.REPO_FIELD.build_vocab(train, val, test)
+        return BucketIterator.splits(
+                   (train, val, test),
+                   batch_size=batch_size,
+                   repeat=False,
+                   shuffle=shuffle,
+                   sort_within_batch=True,
+                   device=device
+               )
 
 
 class VulasDiffTokenHierarchical(VulasDiffToken):

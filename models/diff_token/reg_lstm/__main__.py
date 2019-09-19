@@ -149,6 +149,9 @@ if __name__ == '__main__':
         model.load_ema_params()
 
     # Calculate dev and test metrics
+    evaluate_dataset('train', dataset_map[args.dataset], model, None, train_iter, args.batch_size,
+                     is_multilabel=dataset_class.IS_MULTILABEL, device=args.gpu,
+                     matrix_path=os.path.join(args.matrix_path, "train"))
     evaluate_dataset('dev', dataset_class, model, None, dev_iter, args.batch_size,
                      is_multilabel=dataset_class.IS_MULTILABEL, device=args.gpu,
                      matrix_path=os.path.join(args.matrix_path, "dev"))
